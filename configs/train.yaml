@@ -1,0 +1,58 @@
+# ============================================================================
+# Training + export config. Consumed by scripts/train.py and export_onnx.py.
+# These are Ultralytics train() kwargs plus a few of our own.
+# ============================================================================
+
+# Base weights: COCO-pretrained yolov9s. The backbone transfers; the detect
+# head is reinitialized because our class set differs from COCO's 80. Training
+# on the COCO subset (see datasets.yaml) is what prevents forgetting.
+model: yolov9s.pt
+
+# Match the input size your Frigate detector feeds the model. Frigate's default
+# yolov9 ONNX runs at 640x640, so train at 640; a train/deploy size mismatch
+# hurts accuracy. Whatever you set here, Frigate's model width/height must equal.
+imgsz: 640
+
+epochs: 120
+batch: 24                 # yolov9s @ 640 on the 5090 (32GB); raise toward 48 if
+                          # VRAM allows, lower if you hit OOM
+patience: 25              # early stop
+# Checkpointing: last.pt is written every epoch (resume point); save_period also
+# keeps milestone snapshots (epoch10.pt, epoch20.pt, ...) for rollback/eval.
+# train.py auto-resumes from last.pt on a crash (--max-retries).
+save_period: 10
+optimizer: auto
+lr0: 0.01
+cos_lr: true
+seed: 0
+device: 0
+
+# Two-phase fine-tuning to protect the transferred backbone:
+#   freeze for the first chunk (head learns the new class space), then unfreeze.
+# Set freeze: 0 to disable. 10 freezes the backbone of yolov9s.
+freeze: 10
+warmup_epochs: 5
+
+# Light augmentation tuned for fixed security-camera viewpoints. Mosaic helps
+# small-object (distant package) recall; turn it off for the last epochs.
+mosaic: 1.0
+close_mosaic: 15
+fliplr: 0.5
+flipud: 0.0               # cameras are not upside down
+degrees: 5.0
+translate: 0.1
+scale: 0.5
+hsv_h: 0.015
+hsv_s: 0.7
+hsv_v: 0.4
+
+project: models
+name: yolov9s-package
+
+# ---- Export (scripts/export_onnx.py) ---------------------------------------
+export:
+  format: onnx
+  opset: 16
+  simplify: true
+  dynamic: false          # Frigate wants fixed input
+  half: false             # export fp32; Frigate/TensorRT handles precision

@@ -1,0 +1,14 @@
+# Install torch SEPARATELY first (Blackwell/5090 needs cu128 wheels) — see
+# setup.sh / README. Then: pip install -r requirements.txt
+ultralytics>=8.3.0
+fiftyone>=1.0.0
+roboflow>=1.1.50
+opencv-python-headless>=4.9
+pyyaml>=6.0
+tqdm>=4.66
+onnx>=1.16
+onnxslim>=0.1.34
+onnxruntime-gpu>=1.18
+requests>=2.31          # remote detector benchmark (scripts/eval_remote.py)
+pycocotools>=2.0.7      # detector-agnostic COCO mAP scorer for benchmarks
+wandb>=0.17             # training monitoring (self-hosted server, see ensure_wandb.py)

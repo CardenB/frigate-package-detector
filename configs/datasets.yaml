@@ -1,0 +1,185 @@
+# ============================================================================
+# Which datasets to pull and how much. Edit freely — every download script
+# reads this file. Sample caps keep the COCO/Open-Images "background" classes
+# from dwarfing the package images (see scripts/analyze_dataset.py).
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# CURATION REGISTRY — decisions from visually reviewing each dataset with
+# scripts/make_review_report.py. Keys are a source name (e.g. package_seg) or a
+# Roboflow project "workspace/project".
+#   whitelist : reviewed & approved (documentation).
+#   blacklist : EXCLUDED — convert/report SKIP these. Keep the reason so we
+#               don't re-add them by mistake.
+# Anything in neither list is treated as PENDING review (still used, but the
+# pipeline prints a warning so unreviewed data can't slip in silently).
+# ----------------------------------------------------------------------------
+whitelist:
+  coco:
+    reason: >
+      Canonical anti-forgetting base — keeps all 80 default classes alive. Not a
+      porch-package candidate; always approved.
+  open_images:
+    reason: >
+      Real shipping boxes in home/indoor contexts (closest domain match to a
+      porch camera) plus the COCO background classes. Reviewed 2026-06-07.
+  "package-detection/package-at-front-door":
+    reason: >
+      Real outdoor doorstep/sidewalk deliveries with individually tight boxes —
+      best on-domain package set. Original of the test-xtzgd fork. Reviewed
+      2026-06-07.
+  "yolo-amaz8/box-n1x4q":
+    reason: >
+      Approved for use. Reviewed 2026-06-07.
+  "alexey-db6gc/delivery-box":
+    reason: >
+      Whitelisted by user 2026-06-07 despite stock-photo / coarse whole-pile
+      annotation concerns — kept for package volume.
+  "detectionbox/detection_box":
+    reason: >
+      Studio shots of cardboard boxes (open/broken/closed). Not doorstep, but
+      acceptable box-shape volume per user 2026-06-07. broken/open variants
+      mapped to package.
+  frigate:
+    reason: >
+      Gold domain data — frames from the user's own cameras, human-reviewed from
+      Frigate detections. Highest-value source; oversampled in training.
+
+blacklist:
+  package_seg:
+    reason: >
+      Ultralytics package-seg is industrial conveyor-belt / sorting-line imagery
+      (magenta machine-vision lighting), not doorstep/porch parcels. Domain
+      mismatch for Frigate porch package detection. Reviewed 2026-06-07.
+  "pacchi/parcel-ljsjc":
+    reason: >
+      Top-down conveyor/sorting-rig imagery (machine-vision dot mat) — same
+      industrial mismatch as package_seg. Reviewed 2026-06-07.
+  "haw-odap3/packages-iw8aw":
+    reason: >
+      Indoor lab/office retail product boxes with people reaching over counters,
+      not doorstep parcels. Not the target domain. Reviewed 2026-06-07.
+  "test-xtzgd/package-detection-dq7iz":
+    reason: >
+      Exact duplicate of package-detection/package-at-front-door (1293 imgs /
+      1998 boxes). Kept the original; dropped this fork to avoid double-weighting.
+
+# Deferred = intentionally LEFT OUT of builds for now, but NOT rejected — kept on
+# disk and documented for possible future reinclusion. Pipeline skips these like
+# a blacklist; the distinction is intent (revisit later vs. never).
+deferred:
+  "wichitaedu-mgf4d/packages-6r4n6":
+    reason: >
+      22k indoor product-on-desk video keyframes (webcams/labels/hands), not
+      doorstep. Promising VOLUME — revisit later, but only SUBSAMPLED (e.g. a few
+      thousand) so it can't dominate; do not oversample. Reviewed 2026-06-07.
+  "packageandbarcode/package-and-label-detection-agjvl":
+    reason: >
+      13k noisy 38-class warehouse family — cardboard dioramas + retail products
+      (coffee bag), wrong domain. Potential future option only if heavily
+      filtered/relabeled. Left out for now. Reviewed 2026-06-07.
+
+# ----------------------------------------------------------------------------
+# CLASS-PRESENCE OVERSAMPLE (train split only). Any training image containing a
+# listed class is duplicated N times, boosting a rare/target class wherever it
+# appears — without inflating other classes (unlike per-source oversample).
+# val/test are never oversampled, so eval metrics stay honest. Tune via the
+# before/after report: `make balance`.
+# ----------------------------------------------------------------------------
+oversample_classes:
+  package: 4
+
+# ---- Ultralytics package-seg (segmentation -> bbox) ------------------------
+package_seg:
+  enabled: false           # BLACKLISTED (see curation registry above)
+  # Auto-downloaded by ultralytics; no key needed.
+
+# ---- Open Images V7 (via FiftyOne) -----------------------------------------
+open_images:
+  enabled: true
+  map_box: true            # map the noisy "Box" class to package? (proxy data)
+  # Per-class sample caps. Keep package-proxy ("Box") high, others modest so
+  # they reinforce COCO without flooding the set.
+  max_samples_per_class:
+    Box: 2500
+    Person: 1500
+    Car: 1500
+    Bicycle: 800
+    Motorcycle: 600
+    Bus: 600
+    Truck: 800
+    Dog: 800
+    Cat: 800
+  splits: [train, validation]
+
+# ---- COCO 2017 replay (via FiftyOne) ---------------------------------------
+# The anti-forgetting set. To keep ALL 80 COCO classes alive (drop-in for the
+# default model), retain the full label space here — do NOT restrict classes.
+# Scale max_samples to your compute: more COCO = better retention, longer train.
+coco_subset:
+  enabled: true
+  all_coco_classes: true       # retain all 80 (required for a clean drop-in)
+  max_samples:
+    train: null                # null = FULL COCO train (~118k imgs) for max retention
+    validation: null           # null = full val (~5k) for proper COCO mAP
+
+# ---- Roboflow Universe projects --------------------------------------------
+# Requires ROBOFLOW_API_KEY in .env (free account). Each entry is a public
+# Universe project. `format: yolov9` yields YOLO txt labels + a data.yaml.
+# Find more at https://universe.roboflow.com/search?q=package and paste the
+# workspace/project/version from the project's "Download Dataset" dialog.
+roboflow:
+  enabled: true
+  format: yolov9
+  projects:
+    # whitelisted
+    - workspace: alexey-db6gc
+      project: delivery-box
+      version: 1
+    - workspace: yolo-amaz8
+      project: box-n1x4q
+      version: 1
+    - workspace: pacchi
+      project: parcel-ljsjc
+      version: 2
+    - workspace: haw-odap3
+      project: packages-iw8aw
+      version: 3
+    # --- user-added (2026-06-07) ---
+    - workspace: package-detection          # WHITELISTED — best on-domain doorstep set
+      project: package-at-front-door
+      version: 2
+    - workspace: wichitaedu-mgf4d           # 22k imgs — PENDING, REVIEW before trusting
+      project: packages-6r4n6
+      version: 2
+    - workspace: detectionbox               # PENDING; broken/open variants now map to package
+      project: detection_box
+      version: 5
+    - workspace: packageandbarcode          # 13k, noisy 38-class warehouse family — PENDING, REVIEW
+      project: package-and-label-detection-agjvl
+      version: 4
+    # NOTE: projects-hn72q/package-v2-5knuq is NOT pullable — the owner never
+    # published a downloadable version (v1-5 all 404). Skipped.
+    # --- add your own finds below ---
+    # - workspace: <ws>
+    #   project: <proj>
+    #   version: <n>
+
+# ---- Frigate review rounds (your own camera data — the flywheel) ------------
+# Populated by the review loop: frigate_pull -> frigate_review -> frigate_export
+# writes YOLO rounds into data/raw/frigate/round-<id>/. Needs FRIGATE_URL in
+# .env (deployment-private). See frigate/REVIEW.md.
+frigate:
+  enabled: true
+  # Keep human-confirmed false-positive frames as hard negatives (empty label).
+  # These are the strongest signal for cutting Frigate's false alarms.
+  keep_negatives: true
+  # Duplicate each train image N times so your in-domain data outweighs the big
+  # generic sets. Applied to train only (never val/test). Tune as the round grows.
+  oversample: 8
+  # frigate_pull.py defaults (override on the CLI):
+  pull:
+    labels: [package]        # which Frigate object types to pull for review
+    limit: 200               # max events per pull
+    min_score: 0.0           # pull low-score ones too — they're the FP goldmine
+    full_frame: true         # full-frame snapshot (not region crop) for labels

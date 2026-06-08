@@ -1,0 +1,47 @@
+# =============================================================================
+# Deploying the fine-tuned model into Frigate.
+#
+# This model is a DROP-IN for Frigate's default YOLOv9 ONNX (`yolo-generic`
+# detector): same input layout and same class order 0..79, with `package`
+# appended as class 80. So swapping it in is a small change — new model file,
+# new labelmap (coco-80 + package), and (if your detector compiles models) a
+# cache clear. KEEP your existing `detectors:` block and input fields as they
+# are; only the lines below change.
+# =============================================================================
+
+# ---- Step 1: copy the exported files into the Frigate model dir -------------
+# (export_onnx.py wrote best.onnx + labelmap.txt beside the trained weights)
+#   cp models/yolov9s-package*/weights/best.onnx    <frigate>/config/model_cache/yolov9-package.onnx
+#   cp models/yolov9s-package*/weights/labelmap.txt <frigate>/config/model_cache/yolov9-package-labelmap.txt
+#
+# ---- Step 2: if your detector compiles/caches models, clear that cache ------
+# Some backends cache a compiled artifact per model (e.g. TensorRT `.engine`,
+# MIGraphX `.mxr`) under the model_cache dir. If you don't clear it when
+# swapping the ONNX, the stale compiled model is reused. First boot recompiles.
+#
+# ---- Step 3: point model: at the new files (everything else unchanged) ------
+model:
+  path: /config/model_cache/yolov9-package.onnx
+  labelmap_path: /config/model_cache/yolov9-package-labelmap.txt
+  model_type: yolo-generic        # same parser as the default yolov9 ONNX
+  width: 640                      # MUST equal configs/train.yaml: imgsz
+  height: 640
+  input_tensor: nchw              # [1, 3, W, H]
+  input_dtype: float              # FP32 (export.half=false)
+  input_pixel_format: rgb
+# Output shape grows from [1, 84, N] (80 classes) to [1, 85, N] (81 classes).
+# yolo-generic infers class count from the shape, so no other model change is
+# needed — just the matching 81-line labelmap above.
+
+# ---- Step 4: track the new class --------------------------------------------
+# All 80 COCO classes still work exactly as before; just add `package`.
+objects:
+  track:
+    - person
+    - car
+    - package
+  filters:
+    package:
+      min_score: 0.55
+      threshold: 0.70
+      min_area: 1500              # tune to your camera resolution / package size

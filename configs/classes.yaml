@@ -1,0 +1,187 @@
+# ============================================================================
+# Unified class scheme.
+#
+# Mission: a DROP-IN for Frigate's default YOLOv9 model — keep all 80 COCO
+# classes in their exact canonical order, and APPEND `package` as id 80. This
+# is what makes it a true drop-in (Frigate's coco-80 labelmap just gains one
+# line) and what "without catastrophic forgetting" requires: the other 79
+# classes must keep working, so they stay in the class set AND in the data
+# (COCO replay — see configs/datasets.yaml).
+#
+# The list index IS the YOLO class id. DO NOT reorder 0..79 — that order must
+# match Frigate's coco-80 labelmap / the stock model. `package` must stay last.
+#
+# `sources` maps each upstream dataset's native label NAMES onto a unified
+# class. `__identity__: true` means "a native name that already equals a
+# unified class maps to itself" (used for COCO). Unmapped names are dropped.
+# ============================================================================
+
+classes:
+  - person            # 0
+  - bicycle           # 1
+  - car               # 2
+  - motorcycle        # 3
+  - airplane          # 4
+  - bus               # 5
+  - train             # 6
+  - truck             # 7
+  - boat              # 8
+  - traffic light     # 9
+  - fire hydrant      # 10
+  - stop sign         # 11
+  - parking meter     # 12
+  - bench             # 13
+  - bird              # 14
+  - cat               # 15
+  - dog               # 16
+  - horse             # 17
+  - sheep             # 18
+  - cow               # 19
+  - elephant          # 20
+  - bear              # 21
+  - zebra             # 22
+  - giraffe           # 23
+  - backpack          # 24
+  - umbrella          # 25
+  - handbag           # 26
+  - tie               # 27
+  - suitcase          # 28
+  - frisbee           # 29
+  - skis              # 30
+  - snowboard         # 31
+  - sports ball       # 32
+  - kite              # 33
+  - baseball bat      # 34
+  - baseball glove    # 35
+  - skateboard        # 36
+  - surfboard         # 37
+  - tennis racket     # 38
+  - bottle            # 39
+  - wine glass        # 40
+  - cup               # 41
+  - fork              # 42
+  - knife             # 43
+  - spoon             # 44
+  - bowl              # 45
+  - banana            # 46
+  - apple             # 47
+  - sandwich          # 48
+  - orange            # 49
+  - broccoli          # 50
+  - carrot            # 51
+  - hot dog           # 52
+  - pizza             # 53
+  - donut             # 54
+  - cake              # 55
+  - chair             # 56
+  - couch             # 57
+  - potted plant      # 58
+  - bed               # 59
+  - dining table      # 60
+  - toilet            # 61
+  - tv                # 62
+  - laptop            # 63
+  - mouse             # 64
+  - remote            # 65
+  - keyboard          # 66
+  - cell phone        # 67
+  - microwave         # 68
+  - oven              # 69
+  - toaster           # 70
+  - sink              # 71
+  - refrigerator      # 72
+  - book              # 73
+  - clock             # 74
+  - vase              # 75
+  - scissors          # 76
+  - teddy bear        # 77
+  - hair drier        # 78
+  - toothbrush        # 79
+  - package           # 80   <-- the augmentation (not in COCO)
+
+# Single-class build target (BUILD_MODE=single). Drops everything but package.
+single_class_keep:
+  - package
+
+# Security-relevant classes we actually care about on the cameras. Used as the
+# DEFAULT scope for benchmark example-mining (top failures/positives galleries)
+# so we don't render images for all 80 COCO classes. Metrics still cover all 80
+# (to catch forgetting); only the per-class image galleries are limited to these.
+# Edit freely; `eval_baseline.py --all-classes` overrides to mine everything.
+security_classes:
+  - person
+  - bicycle
+  - car
+  - motorcycle
+  - bus
+  - truck
+  - dog
+  - cat
+  - backpack
+  - handbag
+  - suitcase
+  - package
+
+# ----------------------------------------------------------------------------
+# Per-source native-name -> unified-class mappings (matched case-insensitively).
+# ----------------------------------------------------------------------------
+sources:
+
+  # COCO 2017 (via FiftyOne) — native names already match our 0..79 exactly.
+  coco:
+    __identity__: true
+
+  # Frigate review rounds — your own camera frames, reviewed from Frigate's
+  # detections. Frigate emits COCO label names + "package", which already match
+  # our unified classes, so identity-map them (incl. package).
+  frigate:
+    __identity__: true
+
+  # Open Images V7 (via FiftyOne) — Title-Case names; map onto COCO classes
+  # where they correspond, plus "Box" as a NOISY package proxy (any cardboard/
+  # storage box). Toggle the proxy via open_images.map_box in datasets.yaml.
+  open_images:
+    Person: person
+    Bicycle: bicycle
+    Car: car
+    Motorcycle: motorcycle
+    Bus: bus
+    Truck: truck
+    Train: train
+    Boat: boat
+    Bird: bird
+    Cat: cat
+    Dog: dog
+    Horse: horse
+    Backpack: backpack
+    Handbag: handbag
+    Umbrella: umbrella
+    Box: package
+
+  # Ultralytics package-seg (segmentation -> bbox). Single native class.
+  package_seg:
+    package: package
+
+  # Roboflow Universe projects — many naming synonyms for the package class.
+  roboflow:
+    package: package
+    packages: package
+    box: package
+    boxes: package
+    parcel: package
+    parcels: package
+    delivery: package
+    delivery-box: package
+    delivery_box: package
+    cardboard-box: package
+    deliverybox: package
+    package-delivered: package
+    amazon-package: package
+    box_broken: package          # a broken parcel is still a package
+    box-broken: package
+    open_package: package        # an opened parcel is still a package
+    opened_box: package
+    person: person
+    car: car
+    dog: dog
+    cat: cat

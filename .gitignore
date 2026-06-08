@@ -1,0 +1,39 @@
+# Data + model artifacts — never commit these (huge, regenerable)
+data/raw/*
+data/interim/*
+data/final/*
+data/review/
+# Gold eval set = YOUR OWN porch frames (private). Ignore the data, keep the
+# committed README placeholder so the flywheel layout ships with the repo.
+data/gold_eval/*
+!data/gold_eval/README.md
+!data/**/.gitkeep
+models/*
+!models/.gitkeep
+*.pt
+*.onnx
+runs/
+
+# FiftyOne / ultralytics caches that may land here
+*.cache
+.fiftyone/
+
+# Env
+.venv/
+.env
+
+# Private, machine-specific deployment context — never commit / share.
+# Agents may READ these to build context; their contents must never appear in
+# tracked files. See CLAUDE.md "Private local context".
+.private/
+yolov9-finetune-report.md
+
+# wandb local run artifacts
+wandb/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+logs/
+report/

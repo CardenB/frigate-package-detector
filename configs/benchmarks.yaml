@@ -1,0 +1,58 @@
+# ============================================================================
+# Benchmark scenarios = named (dataset, vocabulary) presets. Every detector
+# (stock yolo, finetuned yolo, remote locate-anything) runs against a scenario
+# and is scored identically (pycocotools) by scripts/eval_remote.py, so the
+# numbers are directly comparable.
+#
+#   python scripts/eval_remote.py --scenario coco    --detector remote
+#   python scripts/eval_remote.py --scenario package --detector yolo \
+#       --model models/yolov9s-package/weights/best.pt
+#   python scripts/run_benchmarks.py --scenario package   # whole model matrix
+# ============================================================================
+
+scenarios:
+
+  # Full COCO eval — open-vocab vs YOLO on the standard 80-class taxonomy.
+  # COCO val has clean GT for all 80 classes but NO package.
+  coco:
+    data: data/raw/coco/validation/dataset.yaml
+    split: val
+    vocab: coco80                 # sentinel: all 80 COCO classes (no package)
+
+  # Package eval — same taxonomy as the finetune, INCLUDING package. Held-out
+  # test split of the merged set; only_with_gt focuses the (slow) VLM on frames
+  # that actually contain a vocab object.
+  #
+  # CAVEAT: data/final/test reuses the SAME package sources as training
+  # (Open Images "Box" + Roboflow) — held-out images, not an independent domain.
+  # For a trustworthy package number, use `package_gold` below.
+  package:
+    data: data/final/data.yaml
+    split: test
+    vocab: [person, car, dog, cat, package]
+    only_with_gt: true
+
+  # TRUSTWORTHY package eval — your OWN porch frames reserved via the `holdout`
+  # review tag (see frigate/FLYWHEEL.md). Lives in data/gold_eval/, never trained
+  # on, accumulates across rounds — so this number is comparable round-over-round
+  # and reflects real-world performance. Empty until you tag holdout frames;
+  # run_benchmarks.py skips a scenario whose `data` file doesn't exist yet.
+  package_gold:
+    data: data/gold_eval/dataset.yaml
+    split: test
+    vocab: [person, car, dog, cat, package]
+    only_with_gt: false          # keep negatives → measures false positives too
+
+# Models the suite runner (run_benchmarks.py) sweeps per scenario. Entries whose
+# weights don't exist yet (e.g. the finetune before training) are skipped with a
+# note — so this list can sit here ready for a future run.
+models:
+  - name: yolov9s-stock
+    detector: yolo
+    model: yolov9s.pt
+  - name: yolov9s-package
+    detector: yolo
+    model: models/yolov9s-package/weights/best.pt
+  - name: locate-anything
+    detector: remote
+    # needs REMOTE_DETECTOR_URL in .env
