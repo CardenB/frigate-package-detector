@@ -17,6 +17,11 @@ runs/
 # RF-DETR project: generated COCO data + image symlinks (large, regenerable)
 projects/*/data/
 
+# Private deployment bundle/runbook — deployment-specific (host, paths, hardware,
+# the populated model bundle). Generic deploy guidance stays public in
+# frigate/config.snippet.yaml + frigate/FLYWHEEL.md.
+deploy/
+
 # FiftyOne / ultralytics caches that may land here
 *.cache
 .fiftyone/

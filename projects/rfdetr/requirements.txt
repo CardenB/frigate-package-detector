@@ -1,6 +1,6 @@
 # RF-DETR project deps — install in projects/rfdetr/.venv (NOT the main venv;
 # DETR/transformer deps conflict with the Ultralytics stack). See setup.sh.
-rfdetr>=1.1.0
+rfdetr[train,loggers]>=1.1.0   # [train,loggers] pulls pytorch_lightning etc. — REQUIRED to train
 pyyaml>=6.0
 onnx>=1.16
 onnxruntime-gpu>=1.18

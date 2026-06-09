@@ -2,11 +2,12 @@
 
 variant: nano              # nano | small | medium  (Nano = what you latency-probed)
 
-# Resolution MUST be ÷56. Deploy is future (RF-DETR likely too slow on a modest
-# iGPU at any res), so train for ACCURACY, not the 320 you probed. 560 is the Nano sweet
-# spot; 728 for better small/distant-package recall (slower). [VERIFY] vs Frigate
-# export size if/when you deploy on capable hardware.
-resolution: 560
+# Resolution MUST be ÷32 for Nano (patch_size 16 × num_windows 2 = 32 — the
+# installed rfdetr enforces this; the docs' "÷56" was the Base variant). 384 is
+# ÷32, close to the probed 320 (so deployable-adjacent, not the 576 dead-end) and
+# much faster to train. Frigate export width/height must equal this. Bump to 512/640
+# for more small-package recall if hardware allows (slower).
+resolution: 384
 
 # ---- Dataset (LEAN, not full COCO — see convert_to_coco.py) -----------------
 # Keep only the classes we track; package always kept; cap COCO replay per class.
