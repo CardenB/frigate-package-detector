@@ -55,25 +55,26 @@ Then, after it finishes:
 
 ```bash
 source .venv/bin/activate
-make train                      # fine-tune yolov9s on the 5090
+make train                      # fine-tune yolov9s on your GPU
 make export                     # -> ONNX + labelmap.txt for Frigate
 ```
 
 <details><summary>Manual / step-by-step (what bootstrap.sh automates)</summary>
 
 ```bash
-./setup.sh                      # venv + torch(cu128 for the 5090) + deps
+./setup.sh                      # venv + torch (cu128 CUDA wheels) + deps
 source .venv/bin/activate
 cp .env.example .env            # add ROBOFLOW_API_KEY (optional but recommended)
 
 make data                       # download -> convert -> build  (data/final/)
 make analyze                    # check class balance BEFORE training
-make train                      # fine-tune yolov9s on the 5090
+make train                      # fine-tune yolov9s on your GPU
 make export                     # -> ONNX + labelmap.txt for Frigate
 ```
 </details>
 
-Then follow `frigate/config.snippet.yaml` to wire it into Frigate.
+Then follow the **[deploy runbook](frigate/DEPLOY.md)** to wire it into Frigate
+(asset copy, compiled-cache clear, config merge, verify, and **rollback**).
 
 > Scripts auto-load `.env` (via `scripts/common.py`), so the Roboflow key and
 > `BUILD_MODE` apply whether you run through `make` or call a script directly.
@@ -101,7 +102,8 @@ configs/   classes.yaml (unified classes + per-source maps), datasets.yaml, trai
 scripts/   download_*, convert_to_yolo, build_dataset, analyze_dataset, train, export_onnx
 data/      raw/ interim/ final/   (gitignored)
 models/    training runs + exported onnx (gitignored)
-frigate/   config.snippet.yaml
+frigate/   DEPLOY.md (deploy runbook), config.snippet.yaml,
+           FLYWHEEL.md + REVIEW.md (review flywheel)
 ```
 
 ## Notes & gotchas

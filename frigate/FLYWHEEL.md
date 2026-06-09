@@ -43,7 +43,7 @@ You need two files from the training step:
 
 ## Step 1 — Deploy the model to Frigate
 
-Follow `frigate/config.snippet.yaml`. In short:
+Follow the [deploy runbook](DEPLOY.md) (full steps + rollback). In short:
 
 1. Copy `best.onnx` + `labelmap.txt` into Frigate's model dir.
 2. Point `model.path` / `model.labelmap_path` at them. Keep the existing
