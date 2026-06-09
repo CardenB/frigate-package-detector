@@ -5,10 +5,10 @@ Frigate that keeps the existing COCO classes (no catastrophic forgetting). Each
 candidate is **benchmarked → fine-tuned → deployed** through shared
 infrastructure, so they're directly comparable.
 
-| Project | Framework | Frigate `model_type` | Input | Fine-tune data | Status |
+| Project | Framework | Frigate `model_type` | Input | Fine-tune data | Role |
 |---|---|---|---|---|---|
-| [yolov9](yolov9/PROJECT.md) | Ultralytics | `yolo-generic` | 640×640 NCHW fp32 | YOLO (`data/final`) | **trained + deployed (v1)** — package mAP50 0.80 |
-| [rfdetr](rfdetr/PROJECT.md) | `rfdetr` (Roboflow) | `rfdetr` | 320×320 NCHW fp32 | COCO-JSON (converted) | **candidate (scaffolded)** |
+| [yolov9](yolov9/PROJECT.md) | Ultralytics | `yolo-generic` | 640×640 NCHW fp32 | YOLO (`data/final`) | primary (root pipeline) |
+| [rfdetr](rfdetr/PROJECT.md) | `rfdetr` (Roboflow) | `rfdetr` | 320×320 NCHW fp32 | COCO-JSON (converted) | alternate candidate (scaffolded) |
 
 ## What's shared vs. per-project
 
@@ -25,9 +25,9 @@ infrastructure, so they're directly comparable.
 contract, and any data-format conversion (e.g. RF-DETR needs COCO-JSON, not YOLO).
 
 ## Notes
-- **yolov9 lives in-place** (`configs/`, `scripts/`, `deploy/`) for now because a
-  run is in flight; `projects/yolov9/PROJECT.md` points at it. It can migrate
-  under `projects/yolov9/` later. RF-DETR starts clean in `projects/rfdetr/`.
+- **yolov9 lives in-place** (`configs/`, `scripts/`) — the root pipeline *is* the
+  yolov9 project; `projects/yolov9/PROJECT.md` points at it. It can migrate under
+  `projects/yolov9/` later. RF-DETR starts clean in `projects/rfdetr/`.
 - **Separate environments**: RF-DETR's deps (`rfdetr`/transformer DETR) differ from
   Ultralytics — each project gets its own venv (`projects/<name>/.venv`).
 - **Comparing them**: register a model in `configs/benchmarks.yaml`, run the

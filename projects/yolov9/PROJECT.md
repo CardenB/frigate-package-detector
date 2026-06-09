@@ -1,7 +1,7 @@
 # Project: yolov9 (Ultralytics)
 
-The first zoo candidate, and the one currently deployed. **Lives in-place at the
-repo root** (a training run is in flight, so it hasn't been moved under here).
+The first zoo candidate. **Lives in-place at the repo root** — the root pipeline
+(`configs/`, `scripts/`) *is* the yolov9 project; it can move under here later.
 
 ## Where its pieces are
 | Concern | Location |
@@ -10,7 +10,7 @@ repo root** (a training run is in flight, so it hasn't been moved under here).
 | Train | `scripts/train.py` (Ultralytics, checkpoint + auto-resume) → `make train` |
 | Export | `scripts/export_onnx.py` → contract-verified ONNX |
 | Benchmark | `scripts/eval_baseline.py` / `make baseline` (+ shared report) |
-| Deploy bundle | `deploy/` (onnx + labelmap + `config.snippet.yaml` + `DEPLOY.md`) |
+| Deploy | [`frigate/DEPLOY.md`](../../frigate/DEPLOY.md) runbook + `frigate/config.snippet.yaml` |
 | Monitoring | self-hosted wandb (`scripts/ensure_wandb.py`, `scripts/wandb_logging.py`) |
 
 ## Frigate deploy contract
@@ -18,9 +18,10 @@ repo root** (a training run is in flight, so it hasn't been moved under here).
 - output `[1, 85, 8400]` (4 bbox + 81 classes), no embedded NMS
 - labelmap: 81 lines, COCO-80 canonical order + `package` (id 80)
 
-## Status
-- Trained on full-COCO replay + Open Images + curated Roboflow (133k train).
-- **Package** mAP50 **0.80** / mAP50-95 0.64 (in-domain test); COCO retention
-  **−0.011** mAP50-95 vs stock (minimal forgetting).
-- Deploy v1 bundle built (mid-training snapshot). Re-export
-  `models/yolov9s-package/weights/best.pt` after the full run for the final model.
+## Evaluate it yourself
+This repo gives you the tools to measure — not a verdict. Train, then form your
+own conclusions on your data:
+- `make baseline` — COCO retention vs stock yolov9s (the no-forgetting check).
+- `make benchmark` — package precision/recall on the held-out test split;
+  `--scenario package_gold` runs it on your own reserved porch frames (the
+  trustworthy, in-domain number). See `configs/benchmarks.yaml`.
