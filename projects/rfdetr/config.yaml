@@ -1,0 +1,34 @@
+# RF-DETR project config. Consumed by convert_to_coco.py / train.py / export_onnx.py.
+
+variant: nano              # nano | small | medium  (Nano = what you latency-probed)
+
+# Resolution MUST be ÷56. Deploy is future (RF-DETR likely too slow on a modest
+# iGPU at any res), so train for ACCURACY, not the 320 you probed. 560 is the Nano sweet
+# spot; 728 for better small/distant-package recall (slower). [VERIFY] vs Frigate
+# export size if/when you deploy on capable hardware.
+resolution: 560
+
+# ---- Dataset (LEAN, not full COCO — see convert_to_coco.py) -----------------
+# Keep only the classes we track; package always kept; cap COCO replay per class.
+keep_classes_from: security_classes   # in ../../configs/classes.yaml
+cap_per_class: 1500
+coco_data_dir: data                   # convert_to_coco.py writes here
+# num_classes is len(keep_classes); written to data/classes.txt by the converter.
+# [VERIFY] set num_classes explicitly in train (known rfdetr save bug, issue #407).
+
+# ---- Fine-tune recipe (RF-DETR docs) ----------------------------------------
+epochs: 100                # with early stopping; not 10 (demo). DINOv2 transfers fast
+                           # but arch-aug regularization needs enough epochs on small data
+lr: 0.0001                 # head; backbone gets a lower LR internally
+batch_size: 8              # 5090/32GB; total batch = batch_size * grad_accum_steps
+grad_accum_steps: 2        # -> effective batch 16
+early_stopping: true
+early_stopping_patience: 15
+early_stopping_min_delta: 0.005
+early_stopping_use_ema: true   # EMA generalizes better; export the EMA weights
+
+output_dir: runs
+
+export:
+  format: onnx
+  # size follows `resolution`.

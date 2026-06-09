@@ -56,3 +56,14 @@ models:
   - name: locate-anything
     detector: remote
     # needs REMOTE_DETECTOR_URL in .env
+
+  # --- RF-DETR candidate (projects/rfdetr/). Commented until enabled because the
+  # runner has no `rfdetr` detector path yet. To activate: add `--detector rfdetr`
+  # to scripts/eval_remote.py (load ONNX, emit boxes in the shared scorer format),
+  # export the ONNX (projects/rfdetr/), then uncomment. See projects/rfdetr/PROJECT.md.
+  # - name: rfdetr-stock
+  #   detector: rfdetr
+  #   model: projects/rfdetr/deploy/rfdetr-nano-stock.onnx
+  # - name: rfdetr-package
+  #   detector: rfdetr
+  #   model: projects/rfdetr/deploy/rfdetr-nano-package.onnx
